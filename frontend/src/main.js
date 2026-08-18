@@ -12,107 +12,60 @@ const drpps = [
   [7,'7ª DRPP','Caxias do Sul','Serra'],[8,'8ª DRPP','Santa Cruz do Sul','Vale do Rio Pardo'],
   [9,'9ª DRPP','Charqueadas','Carbonífera'],[10,'10ª DRPP','Porto Alegre','Porto Alegre']
 ];
-
 const suggestions = ['Roçada','Capina','Jardinagem','Limpeza e conservação','Manutenção predial','Pintura','Serviços gerais'];
-let activities = [];
-let selectedEstablishments = [];
-let establishments = [];
+let activities = [], selectedEstablishments = [], establishments = [], uploadedFiles = [], requestType = 'empresa';
 
-function normalizeActivity(value) {
-  return value.trim().replace(/\s+/g, ' ').replace(/(^|[.!?]\s+)([a-zà-ÿ])/g, (_, p, c) => p + c.toUpperCase()).replace(/^([a-zà-ÿ])/u, (_, c) => c.toUpperCase()).replace(/\b(da|de|do|das|dos|e|em|na|no)\b/gi, m => m.toLowerCase());
+function app() { return document.querySelector('#app'); }
+function normalizeActivity(value) { return value.trim().replace(/\s+/g, ' ').replace(/^([a-zà-ÿ])/u, (_, c) => c.toUpperCase()).replace(/\b(da|de|do|das|dos|e|em|na|no)\b/gi, m => m.toLowerCase()); }
+function layout(content) {
+  app().innerHTML = `<header class="govbar"><div><span>SECRETARIA DE SISTEMAS PENAL E SOCIOEDUCATIVO</span><nav><a href="#">Acessibilidade</a><a href="#">Contraste</a></nav></div></header><header class="brandbar"><div class="brand"><div class="crest">RS</div><div><strong>POLÍCIA PENAL</strong><small>RIO GRANDE DO SUL</small></div><span class="project">TRABALHO PRISIONAL</span></div></header><nav class="mainnav"><a href="#" data-home>Início</a><a href="#beneficios">O trabalho prisional</a><a href="#como-funciona">Como funciona</a><a class="nav-cta" href="#solicitar">Solicitar Termo</a></nav>${content}<footer><strong>Trabalho Prisional RS</strong><span>Gerador de documentos · Projeto em desenvolvimento</span></footer>`;
+  document.querySelector('[data-home]').onclick = e => { e.preventDefault(); renderHome(); };
+}
+function renderHome() {
+  layout(`<main>
+    <section class="hero"><div class="hero-copy"><p class="eyebrow">TRABALHO PRISIONAL · RIO GRANDE DO SUL</p><h1>Uma forma mais simples de iniciar uma contratação de mão de obra prisional.</h1><p class="lead">O trabalho prisional tem finalidade educativa e produtiva e integra as políticas de reintegração social. Aqui, a ideia é transformar a documentação inicial em um processo mais simples.</p><div class="hero-actions"><a class="primary" href="#solicitar" id="start">Quero firmar um Termo de Cooperação <span>→</span></a><a class="secondary" href="#como-funciona">Entender como funciona</a></div></div><div class="hero-card"><span class="card-kicker">COMO FUNCIONA</span><div class="step"><b>01</b><span>Envie os documentos</span></div><div class="step"><b>02</b><span>O sistema identifica os dados</span></div><div class="step"><b>03</b><span>Você confere e complementa</span></div><div class="step"><b>04</b><span>Documentos são gerados</span></div></div></section>
+    <section id="beneficios" class="section"><div class="section-heading"><p class="eyebrow">POR QUE PARTICIPAR?</p><h2>O trabalho prisional produz benefícios para todos.</h2></div><div class="benefit-grid"><article><div class="icon">01</div><h3>Para a pessoa privada de liberdade</h3><p>Profissionalização, remição de pena e contribuição para o orçamento familiar.</p></article><article><div class="icon">02</div><h3>Para empresas e municípios</h3><p>Responsabilidade social, custos menores de produção e participação na inserção social.</p></article><article><div class="icon">03</div><h3>Para a sociedade</h3><p>O trabalho integra a reintegração social e pode contribuir para a redução da reincidência.</p></article></div><p class="source-note">Fonte: Polícia Penal do Rio Grande do Sul e Lei de Execução Penal.</p></section>
+    <section id="como-funciona" class="section section-alt"><div class="section-heading"><p class="eyebrow">COMO FUNCIONA</p><h2>Você informa o essencial. O sistema cuida do resto.</h2></div><div class="timeline"><div><b>1</b><h3>Documentação</h3><p>Envie os documentos necessários para identificar a entidade e seu representante.</p></div><div><b>2</b><h3>Leitura e conferência</h3><p>Os dados identificados nos documentos aparecem para sua conferência.</p></div><div><b>3</b><h3>Complementação</h3><p>Preencha somente o que não puder ser obtido automaticamente.</p></div><div><b>4</b><h3>Geração</h3><p>Termo de Cooperação, Plano de Trabalho e documentos complementares são preparados juntos.</p></div></div></section>
+    <section id="solicitar" class="start section"><div><p class="eyebrow">COMEÇAR UMA SOLICITAÇÃO</p><h2>Quem está solicitando?</h2><p>Escolha o tipo de interessado para começar.</p></div><div class="start-actions"><button type="button" onclick="startRequest('empresa')">Empresa</button><button type="button" class="outline" onclick="startRequest('municipio')">Município</button></div></section>
+  </main>`);
+  document.querySelector('#start').onclick = e => { e.preventDefault(); renderDocuments('empresa'); };
+}
+window.startRequest = type => { requestType = type; renderDocuments(type); };
+
+function renderDocuments(type) {
+  requestType = type;
+  layout(`<main class="wizard"><div class="wizard-head"><div><p class="eyebrow">NOVA SOLICITAÇÃO</p><h1>Documentação inicial</h1><p>Tipo de interessado: <strong>${type === 'empresa' ? 'Empresa' : 'Município'}</strong></p></div><div class="steps"><b>1 Documentos</b><span>2 Conferência</span><span>3 Geração</span></div></div><section class="card upload-card"><h2>Envie os documentos</h2><p class="muted">O sistema usará os documentos para identificar e conferir os dados. No MVP, os arquivos são selecionados nesta etapa; a persistência e o envio à área técnica serão ligados ao Storage depois.</p><div class="upload-grid">${documentTypes(type).map((d,i)=>`<label class="upload-item"><span class="upload-icon">↑</span><strong>${d}</strong><small>PDF, JPG ou PNG</small><input type="file" accept=".pdf,.jpg,.jpeg,.png" data-doc="${i}"></label>`).join('')}</div><div id="fileList" class="file-list"></div></section><div class="wizard-actions"><button class="secondary-btn" onclick="renderHome()">Voltar</button><button class="primary" id="continueDocs">Continuar →</button></div></main>`);
+  document.querySelectorAll('[data-doc]').forEach(input => input.onchange = () => { uploadedFiles = [...document.querySelectorAll('[data-doc]')].filter(x=>x.files[0]).map(x=>({label:x.closest('.upload-item').querySelector('strong').textContent,file:x.files[0]})); renderFileList(); });
+  document.querySelector('#continueDocs').onclick = () => renderForm();
+}
+function documentTypes(type) { return type === 'empresa' ? ['Carta Proposta assinada','Comprovante de endereço empresarial','Contrato Social vigente e alterações','Documento do responsável','Cartão de CNPJ atualizado','Inscrição estadual','Termo de opção pelo Simples Nacional'] : ['Carta Proposta assinada','Cartão CNPJ da Prefeitura','Ata de posse do Prefeito','Documento de identificação do Prefeito']; }
+function renderFileList() { document.querySelector('#fileList').innerHTML = uploadedFiles.map(x=>`<div>✓ ${x.label}: <span>${x.file.name}</span></div>`).join(''); }
+
+function renderForm() {
+  layout(`<main class="wizard"><div class="wizard-head"><div><p class="eyebrow">NOVA SOLICITAÇÃO</p><h1>Confira os dados</h1><p>O preenchimento foi reduzido ao que realmente precisamos para montar o instrumento.</p></div><div class="steps"><span>1 Documentos</span><b>2 Conferência</b><span>3 Geração</span></div></div>
+  <section class="card"><h2>1. Identificação</h2><div class="grid"><label>Tipo de convenente<select id="tipo"><option value="empresa" ${requestType==='empresa'?'selected':''}>Empresa</option><option value="municipio" ${requestType==='municipio'?'selected':''}>Município</option></select></label><label>Razão social / nome<input id="nome" placeholder="Será preenchido a partir dos documentos"></label><label>CNPJ<input id="cnpj" placeholder="Será preenchido a partir dos documentos"></label><label>Responsável<input id="responsavel" placeholder="Será preenchido a partir dos documentos"></label><label class="pending">FPE — se já houver <input id="fpe" placeholder="PREENCHER QUANDO EXISTIR"></label><label class="pending">Ano do FPE <input id="fpe_ano" type="number" placeholder="PREENCHER"></label><label class="pending">Processo PROA <input id="processo" placeholder="PREENCHER QUANDO EXISTIR"></label></div></section>
+  <section class="card"><h2>2. Contratação</h2><div class="grid"><label>Quantidade de pessoas<input id="quantidade" type="number" min="1" placeholder="Ex.: 10"></label><label>Local de prestação<select id="local"><option value="sede_empresa">Na sede da empresa</option><option value="sede_estabelecimento_prisional">Na sede do estabelecimento prisional</option><option value="outro">Outro</option></select></label><label id="outroWrap" class="wide hidden">Outro local<input id="outro" placeholder="Informe o local"></label></div><div class="subsection"><h3>Estabelecimentos penais</h3><div class="region-grid">${drpps.map(([id,n,s,d])=>`<button class="region" data-region="${id}"><strong>${n}</strong><span>${d}</span><small>Sede: ${s}</small></button>`).join('')}</div><div class="search"><input id="estSearch" placeholder="Pesquisar pelo nome ou município"><div id="estResults"></div></div><div id="selected" class="chips"></div></div><div class="subsection"><h3>Atividades</h3><div class="activity-row"><input id="activity" list="activitySuggestions" placeholder="Digite a atividade, ex.: roçada"><datalist id="activitySuggestions">${suggestions.map(x=>`<option value="${x}">`).join('')}</datalist><button id="addActivity">Adicionar</button></div><div id="activities" class="chips"></div></div></section>
+  <section class="card"><h2>3. Jornada e remuneração</h2><div class="grid"><label>Início<input id="inicio" type="time" value="08:00"></label><label>Término<input id="fim" type="time" value="17:00"></label><label>Início do intervalo<input id="intInicio" type="time" value="12:00"></label><label>Fim do intervalo<input id="intFim" type="time" value="13:00"></label><label>Horas por dia<input id="horasDia" type="number" min="0" max="24" step="0.5" value="8"></label><label>Dias trabalhados por semana<input id="dias" type="number" min="1" max="7" value="5"></label><label class="wide">Remuneração<input id="remuneracao" placeholder="100% do salário mínimo nacional vigente"></label></div><div id="jornadaAlert" class="alert hidden"></div></section>
+  <section class="card"><h2>4. Vigência</h2><div class="grid"><label>Vigência (anos)<input id="vigencia" type="number" min="0.1" step="0.1" value="5"></label><label id="justWrap" class="wide hidden">Justificativa obrigatória<input id="justificativa" placeholder="Justifique a adoção de prazo inferior a 5 anos"></label></div><div id="vigAlert" class="alert hidden"></div></section>
+  <div class="wizard-actions"><button class="secondary-btn" onclick="renderDocuments(requestType)">← Voltar aos documentos</button><button id="save" class="primary">Gerar documentos →</button><span id="status"></span></div></main>`);
+  bindForm(); loadEstablishments();
 }
 
-function render() {
-  document.querySelector('#app').innerHTML = `
-    <main class="shell">
-      <header><div><span class="eyebrow">GERADOR DE MINUTAS</span><h1>Termo de Cooperação</h1><p>Utilização de mão de obra prisional</p></div><span class="badge">MVP</span></header>
-      <section class="card">
-        <h2>1. Identificação</h2>
-        <div class="grid">
-          <label>Tipo de convenente<select id="tipo"><option value="empresa">Empresa</option><option value="municipio">Município</option></select></label>
-          <label>Razão social / nome<input id="nome" placeholder="Nome da empresa ou município"></label>
-          <label>CNPJ<input id="cnpj" placeholder="00.000.000/0000-00"></label>
-          <label>Responsável<input id="responsavel" placeholder="Nome do responsável legal"></label>
-          <label class="pending">FPE <span>🟡</span><input id="fpe" placeholder="Número do FPE, quando existir"></label>
-          <label class="pending">Ano do FPE <span>🟡</span><input id="fpe_ano" type="number" placeholder="2026"></label>
-          <label class="pending">Processo PROA <span>🟡</span><input id="processo" placeholder="Número do processo, quando existir"></label>
-        </div>
-      </section>
-      <section class="card">
-        <h2>2. Contratação</h2>
-        <div class="grid">
-          <label>Quantidade de pessoas<input id="quantidade" type="number" min="1" placeholder="Ex.: 10"></label>
-          <label>Local de prestação<select id="local"><option value="sede_empresa">Na sede da empresa</option><option value="sede_estabelecimento_prisional">Na sede do estabelecimento prisional</option><option value="outro">Outro</option></select></label>
-          <label id="outroWrap" class="wide hidden">Descreva o outro local<input id="outro" placeholder="Informe o local"></label>
-        </div>
-        <div class="subsection"><h3>Estabelecimentos penais</h3><div class="region-grid">${drpps.map(([id,n,s,d]) => `<button class="region" data-region="${id}"><strong>${n}</strong><span>${d}</span><small>Sede: ${s}</small></button>`).join('')}</div>
-        <div class="search"><input id="estSearch" placeholder="Pesquisar estabelecimento pelo nome ou município"><div id="estResults"></div></div><div id="selected" class="chips"></div></div>
-        <div class="subsection"><h3>Atividades</h3><div class="activity-row"><input id="activity" list="activitySuggestions" placeholder="Digite a atividade, ex.: roçada"><datalist id="activitySuggestions">${suggestions.map(x=>`<option value="${x}">`).join('')}</datalist><button id="addActivity">Adicionar</button></div><div id="activities" class="chips"></div></div>
-      </section>
-      <section class="card">
-        <h2>3. Jornada e remuneração</h2>
-        <div class="grid">
-          <label>Início<input id="inicio" type="time" value="08:00"></label><label>Término<input id="fim" type="time" value="17:00"></label>
-          <label>Início do intervalo<input id="intInicio" type="time" value="12:00"></label><label>Fim do intervalo<input id="intFim" type="time" value="13:00"></label>
-          <label>Horas por dia<input id="horasDia" type="number" min="0" max="24" step="0.5" value="8"></label><label>Dias trabalhados/semana<input id="dias" type="number" min="1" max="7" value="5"></label>
-          <label class="wide">Remuneração<input id="remuneracao" placeholder="100% do salário mínimo nacional vigente"></label>
-        </div>
-        <div id="jornadaAlert" class="alert hidden"></div>
-      </section>
-      <section class="card">
-        <h2>4. Vigência</h2>
-        <div class="grid"><label>Vigência (anos)<input id="vigencia" type="number" min="0.1" step="0.1" value="5"></label><label id="justWrap" class="wide hidden">Justificativa obrigatória<input id="justificativa" placeholder="Justifique a adoção de prazo inferior a 5 anos"></label></div>
-        <div id="vigAlert" class="alert hidden"></div>
-      </section>
-      <section class="actions"><button id="save" class="primary">Salvar solicitação</button><span id="status"></span></section>
-    </main>`;
-
-  bind(); loadEstablishments();
-}
-
-function bind() {
-  document.querySelector('#local').onchange = e => document.querySelector('#outroWrap').classList.toggle('hidden', e.target.value !== 'outro');
-  document.querySelector('#vigencia').oninput = updateVigencia;
-  document.querySelector('#horasDia').oninput = updateJornada;
-  document.querySelector('#dias').oninput = updateJornada;
-  document.querySelector('#addActivity').onclick = addActivity;
-  document.querySelector('#activity').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addActivity(); } });
-  document.querySelector('#estSearch').oninput = filterEstablishments;
-  document.querySelectorAll('.region').forEach(b => b.onclick = () => filterEstablishments(null, Number(b.dataset.region)));
-  document.querySelector('#save').onclick = save;
+function bindForm() {
+  document.querySelector('#local').onchange=e=>document.querySelector('#outroWrap').classList.toggle('hidden',e.target.value!=='outro');
+  document.querySelector('#vigencia').oninput=updateVigencia; document.querySelector('#horasDia').oninput=updateJornada; document.querySelector('#dias').oninput=updateJornada;
+  document.querySelector('#addActivity').onclick=addActivity; document.querySelector('#activity').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addActivity();}};
+  document.querySelector('#estSearch').oninput=filterEstablishments; document.querySelectorAll('.region').forEach(b=>b.onclick=()=>filterEstablishments(null,Number(b.dataset.region))); document.querySelector('#save').onclick=save;
   updateVigencia(); updateJornada();
 }
+async function loadEstablishments(){ if(!supabase)return; const {data,error}=await supabase.from('tc_estabelecimentos_penais').select('id,nome,municipio,drpp_id').eq('ativo',true).order('nome'); if(!error) establishments=data||[]; }
+function filterEstablishments(e,regionId=null){const q=e?e.target.value.toLowerCase().trim():document.querySelector('#estSearch').value.toLowerCase().trim();const rows=establishments.filter(x=>(!regionId||x.drpp_id===regionId)&&(!q||`${x.nome} ${x.municipio||''}`.toLowerCase().includes(q))).slice(0,20);document.querySelector('#estResults').innerHTML=rows.map(x=>`<button class="result" data-id="${x.id}"><strong>${x.nome}</strong><span>${x.municipio||''}</span></button>`).join('');document.querySelectorAll('.result').forEach(b=>b.onclick=()=>selectEstablishment(b.dataset.id));}
+function selectEstablishment(id){if(!selectedEstablishments.includes(id))selectedEstablishments.push(id);renderSelected();}
+function renderSelected(){document.querySelector('#selected').innerHTML=selectedEstablishments.map(id=>{const x=establishments.find(y=>y.id===id);return`<span class="chip">${x?.nome||id}<button data-remove="${id}">×</button></span>`}).join('');document.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{selectedEstablishments=selectedEstablishments.filter(id=>id!==b.dataset.remove);renderSelected();});}
+function addActivity(){const input=document.querySelector('#activity'),v=normalizeActivity(input.value);if(!v)return;activities.push(v);input.value='';renderActivities();}
+function renderActivities(){document.querySelector('#activities').innerHTML=activities.map((x,i)=>`<span class="chip">${x}<button data-act="${i}">×</button></span>`).join('');document.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>{activities.splice(Number(b.dataset.act),1);renderActivities();});}
+function updateVigencia(){const n=Number(document.querySelector('#vigencia').value||5),low=n<5;document.querySelector('#justWrap').classList.toggle('hidden',!low);const a=document.querySelector('#vigAlert');a.classList.toggle('hidden',!low);if(low){a.className='alert warning';a.textContent='⚠️ Vigência inferior a 5 anos: a justificativa será obrigatória antes da geração.';}}
+function updateJornada(){const h=Number(document.querySelector('#horasDia').value||0),d=Number(document.querySelector('#dias').value||0),weekly=h*d,a=document.querySelector('#jornadaAlert'),bad=h<6||h>8||weekly>44;a.classList.toggle('hidden',!bad);if(bad){a.className='alert warning';a.textContent=`⚠️ Jornada informada: ${h} h/dia e ${weekly} h/semana. O sistema permitirá prosseguir; a situação deverá ser analisada no processo administrativo.`;}}
+async function save(){const status=document.querySelector('#status');if(!supabase){status.textContent='Backend ainda não conectado a este ambiente.';return;}const vig=Number(document.querySelector('#vigencia').value||5),just=document.querySelector('#justificativa')?.value?.trim();if(vig<5&&!just){status.textContent='Informe a justificativa para vigência inferior a 5 anos.';return;}const payload={tipo_convenente:document.querySelector('#tipo').value,fpe_numero:document.querySelector('#fpe').value.trim()||null,fpe_ano:Number(document.querySelector('#fpe_ano').value)||null,processo_numero:document.querySelector('#processo').value.trim()||null,quantidade_pessoas:Number(document.querySelector('#quantidade').value)||null,local_prestacao_tipo:document.querySelector('#local').value,local_prestacao_outro:document.querySelector('#outro').value.trim()||null,jornada_inicio:document.querySelector('#inicio').value,jornada_fim:document.querySelector('#fim').value,intervalo_inicio:document.querySelector('#intInicio').value,intervalo_fim:document.querySelector('#intFim').value,jornada_semanal_minutos:Math.round(Number(document.querySelector('#horasDia').value||0)*Number(document.querySelector('#dias').value||0)*60),remuneracao_texto:document.querySelector('#remuneracao').value.trim()||null,vigencia_anos:vig,vigencia_justificativa:just||null};const {data,error}=await supabase.from('tc_solicitacoes').insert(payload).select('id').single();if(error){status.textContent=`Erro: ${error.message}`;return;}if(activities.length)await supabase.from('tc_solicitacao_atividades').insert(activities.map((descricao,ordem)=>({solicitacao_id:data.id,descricao,ordem:ordem+1})));if(selectedEstablishments.length)await supabase.from('tc_solicitacao_estabelecimentos').insert(selectedEstablishments.map(estabelecimento_id=>({solicitacao_id:data.id,estabelecimento_id})));status.textContent=`Solicitação ${data.id} registrada.`;}
 
-async function loadEstablishments() {
-  if (!supabase) return;
-  const { data, error } = await supabase.from('tc_estabelecimentos_penais').select('id,nome,municipio,drpp_id').eq('ativo', true).order('nome');
-  if (!error) { establishments = data || []; }
-}
-
-function filterEstablishments(e, regionId = null) {
-  const q = e ? e.target.value.toLowerCase().trim() : document.querySelector('#estSearch').value.toLowerCase().trim();
-  const rows = establishments.filter(x => (!regionId || x.drpp_id === regionId) && (!q || `${x.nome} ${x.municipio || ''}`.toLowerCase().includes(q))).slice(0, 20);
-  document.querySelector('#estResults').innerHTML = rows.map(x => `<button class="result" data-id="${x.id}"><strong>${x.nome}</strong><span>${x.municipio || ''}</span></button>`).join('');
-  document.querySelectorAll('.result').forEach(b => b.onclick = () => selectEstablishment(b.dataset.id));
-}
-function selectEstablishment(id) { if (!selectedEstablishments.includes(id)) selectedEstablishments.push(id); renderSelected(); }
-function renderSelected() { document.querySelector('#selected').innerHTML = selectedEstablishments.map(id => { const x = establishments.find(y => y.id === id); return `<span class="chip">${x?.nome || id}<button data-remove="${id}">×</button></span>`; }).join(''); document.querySelectorAll('[data-remove]').forEach(b => b.onclick = () => { selectedEstablishments = selectedEstablishments.filter(id => id !== b.dataset.remove); renderSelected(); }); }
-function addActivity() { const input = document.querySelector('#activity'); const v = normalizeActivity(input.value); if (!v) return; activities.push(v); input.value=''; renderActivities(); }
-function renderActivities() { document.querySelector('#activities').innerHTML = activities.map((x,i)=>`<span class="chip">${x}<button data-act="${i}">×</button></span>`).join(''); document.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>{activities.splice(Number(b.dataset.act),1);renderActivities();}); }
-function updateVigencia() { const n = Number(document.querySelector('#vigencia').value || 5); const low = n < 5; document.querySelector('#justWrap').classList.toggle('hidden', !low); const a=document.querySelector('#vigAlert'); a.classList.toggle('hidden',!low); if(low) {a.className='alert warning'; a.textContent='⚠️ Vigência inferior a 5 anos. A justificativa será obrigatória antes da submissão.';} }
-function updateJornada() { const h=Number(document.querySelector('#horasDia').value||0), d=Number(document.querySelector('#dias').value||0), weekly=h*d; const a=document.querySelector('#jornadaAlert'); const bad=h<6||h>8||weekly>44; a.classList.toggle('hidden',!bad); if(bad){a.className='alert warning';a.textContent=`⚠️ Jornada informada: ${h} h/dia e ${weekly} h/semana. O sistema permitirá prosseguir, mas a situação deverá ser analisada no processo administrativo.`;} }
-
-async function save() {
-  const status=document.querySelector('#status');
-  if(!supabase){status.textContent='Configure VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY.';return;}
-  const vig=Number(document.querySelector('#vigencia').value||5), just=document.querySelector('#justificativa')?.value?.trim();
-  if(vig<5 && !just){status.textContent='Informe a justificativa para vigência inferior a 5 anos.';return;}
-  const payload={tipo_convenente:document.querySelector('#tipo').value,fpe_numero:document.querySelector('#fpe').value.trim()||null,fpe_ano:Number(document.querySelector('#fpe_ano').value)||null,processo_numero:document.querySelector('#processo').value.trim()||null,quantidade_pessoas:Number(document.querySelector('#quantidade').value)||null,local_prestacao_tipo:document.querySelector('#local').value,local_prestacao_outro:document.querySelector('#outro').value.trim()||null,jornada_inicio:document.querySelector('#inicio').value,jornada_fim:document.querySelector('#fim').value,intervalo_inicio:document.querySelector('#intInicio').value,intervalo_fim:document.querySelector('#intFim').value,jornada_semanal_minutos:Math.round(Number(document.querySelector('#horasDia').value||0)*Number(document.querySelector('#dias').value||0)*60),remuneracao_texto:document.querySelector('#remuneracao').value.trim()||null,vigencia_anos:vig,vigencia_justificativa:just||null};
-  const {data,error}=await supabase.from('tc_solicitacoes').insert(payload).select('id').single();
-  if(error){status.textContent=`Erro: ${error.message}`;return;}
-  if(activities.length) await supabase.from('tc_solicitacao_atividades').insert(activities.map((descricao,ordem)=>({solicitacao_id:data.id,descricao,ordem:ordem+1})));
-  if(selectedEstablishments.length) await supabase.from('tc_solicitacao_estabelecimentos').insert(selectedEstablishments.map(estabelecimento_id=>({solicitacao_id:data.id,estabelecimento_id})));
-  status.textContent=`Solicitação ${data.id} salva.`;
-}
-
-render();
+renderHome();
