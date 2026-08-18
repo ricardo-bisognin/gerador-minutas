@@ -1,0 +1,17 @@
+{
+  "email_domains": ["policiapenal.rs.gov.br"],
+  "secretaria": {
+    "nome": "SECRETARIA DE SISTEMAS PENAL E SOCIOEDUCATIVO",
+    "titular": null,
+    "cargo": "Secretário de Sistemas Penal e Socioeducativo",
+    "documento": null,
+    "matricula": null
+  },
+  "policia_penal": {
+    "nome": "POLÍCIA PENAL",
+    "titular": null,
+    "cargo": "Superintendente da Polícia Penal",
+    "documento": null,
+    "matricula": null
+  }
+}
