@@ -13,7 +13,7 @@ const drpps = [
   [9,'9ª DRPP','Charqueadas','Carbonífera'],[10,'10ª DRPP','Porto Alegre','Porto Alegre']
 ];
 const suggestions = ['Roçada','Capina','Jardinagem','Limpeza e conservação','Manutenção predial','Pintura','Serviços gerais'];
-let activities = [], selectedEstablishments = [], establishments = [], uploadedFiles = [], requestType = 'empresa';
+let activities = [], selectedEstablishments = [], establishments = [], uploadedFiles = [], requestType = null;
 
 function app() { return document.querySelector('#app'); }
 function normalizeActivity(value) { return value.trim().replace(/\s+/g, ' ').replace(/^([a-zà-ÿ])/u, (_, c) => c.toUpperCase()).replace(/\b(da|de|do|das|dos|e|em|na|no)\b/gi, m => m.toLowerCase()); }
@@ -28,18 +28,21 @@ function renderHome() {
     <section id="como-funciona" class="section section-alt"><div class="section-heading"><p class="eyebrow">COMO FUNCIONA</p><h2>Você informa o essencial. O sistema cuida do resto.</h2></div><div class="timeline"><div><b>1</b><h3>Documentação</h3><p>Envie os documentos necessários para identificar a entidade e seu representante.</p></div><div><b>2</b><h3>Leitura e conferência</h3><p>Os dados identificados nos documentos aparecem para sua conferência.</p></div><div><b>3</b><h3>Complementação</h3><p>Preencha somente o que não puder ser obtido automaticamente.</p></div><div><b>4</b><h3>Geração</h3><p>Termo de Cooperação, Plano de Trabalho e documentos complementares são preparados juntos.</p></div></div></section>
     <section id="solicitar" class="start section"><div><p class="eyebrow">COMEÇAR UMA SOLICITAÇÃO</p><h2>Quem está solicitando?</h2><p>Escolha o tipo de interessado para começar.</p></div><div class="start-actions"><button type="button" onclick="startRequest('empresa')">Empresa</button><button type="button" class="outline" onclick="startRequest('municipio')">Município</button></div></section>
   </main>`);
-  document.querySelector('#start').onclick = e => { e.preventDefault(); renderDocuments('empresa'); };
+  document.querySelector('#start').onclick = e => { e.preventDefault(); scrollToRequest(); };
 }
+function scrollToRequest(){ document.querySelector('#solicitar')?.scrollIntoView({behavior:'smooth'}); }
 window.startRequest = type => { requestType = type; renderDocuments(type); };
 
 function renderDocuments(type) {
   requestType = type;
-  layout(`<main class="wizard"><div class="wizard-head"><div><p class="eyebrow">NOVA SOLICITAÇÃO</p><h1>Documentação inicial</h1><p>Tipo de interessado: <strong>${type === 'empresa' ? 'Empresa' : 'Município'}</strong></p></div><div class="steps"><b>1 Documentos</b><span>2 Conferência</span><span>3 Geração</span></div></div><section class="card upload-card"><h2>Envie os documentos</h2><p class="muted">O sistema usará os documentos para identificar e conferir os dados. No MVP, os arquivos são selecionados nesta etapa; a persistência e o envio à área técnica serão ligados ao Storage depois.</p><div class="upload-grid">${documentTypes(type).map((d,i)=>`<label class="upload-item"><span class="upload-icon">↑</span><strong>${d}</strong><small>PDF, JPG ou PNG</small><input type="file" accept=".pdf,.jpg,.jpeg,.png" data-doc="${i}"></label>`).join('')}</div><div id="fileList" class="file-list"></div></section><div class="wizard-actions"><button class="secondary-btn" onclick="renderHome()">Voltar</button><button class="primary" id="continueDocs">Continuar →</button></div></main>`);
+  layout(`<main class="wizard"><div class="wizard-head"><div><p class="eyebrow">NOVA SOLICITAÇÃO · ETAPA 1</p><h1>Primeiro, vamos conhecer o interessado.</h1><p>Escolha apenas o tipo de entidade. O restante aparece conforme a sua escolha.</p></div><div class="steps"><b>1 Documentação</b><span>2 Conferência</span><span>3 Geração</span></div></div>
+  <section class="card progressive-card"><h2>Que tipo de entidade está solicitando?</h2><p class="muted">Selecione uma opção para continuar.</p><div class="entity-options"><button type="button" class="entity-option ${type==='empresa'?'selected':''}" data-entity="empresa"><span class="entity-mark">PJ</span><span><strong>Empresa</strong><small>Sociedade empresária ou outra pessoa jurídica privada.</small></span><span class="entity-arrow">→</span></button><button type="button" class="entity-option ${type==='municipio'?'selected':''}" data-entity="municipio"><span class="entity-mark">RS</span><span><strong>Município</strong><small>Prefeitura municipal.</small></span><span class="entity-arrow">→</span></button></div>${type ? `<div class="entity-reveal" id="entityReveal"><div class="reveal-line"></div><div class="reveal-content"><h3>${type==='empresa'?'Documentos da empresa':'Documentos do município'}</h3><p class="muted">Agora que sabemos quem está solicitando, envie os documentos necessários. O sistema tentará extrair os dados automaticamente.</p><div class="upload-grid">${documentTypes(type).map((d,i)=>`<label class="upload-item"><span class="upload-icon">↑</span><strong>${d}</strong><small>PDF, JPG ou PNG</small><input type="file" accept=".pdf,.jpg,.jpeg,.png" data-doc="${i}"></label>`).join('')}</div><div id="fileList" class="file-list"></div><div class="wizard-actions"><button class="secondary-btn" onclick="renderHome()">Voltar</button><button class="primary" id="continueDocs">Continuar →</button></div></div></div>` : ''}</section></main>`);
+  document.querySelectorAll('[data-entity]').forEach(button => button.onclick = () => startRequest(button.dataset.entity));
   document.querySelectorAll('[data-doc]').forEach(input => input.onchange = () => { uploadedFiles = [...document.querySelectorAll('[data-doc]')].filter(x=>x.files[0]).map(x=>({label:x.closest('.upload-item').querySelector('strong').textContent,file:x.files[0]})); renderFileList(); });
-  document.querySelector('#continueDocs').onclick = () => renderForm();
+  document.querySelector('#continueDocs')?.addEventListener('click', () => renderForm());
 }
 function documentTypes(type) { return type === 'empresa' ? ['Carta Proposta assinada','Comprovante de endereço empresarial','Contrato Social vigente e alterações','Documento do responsável','Cartão de CNPJ atualizado','Inscrição estadual','Termo de opção pelo Simples Nacional'] : ['Carta Proposta assinada','Cartão CNPJ da Prefeitura','Ata de posse do Prefeito','Documento de identificação do Prefeito']; }
-function renderFileList() { document.querySelector('#fileList').innerHTML = uploadedFiles.map(x=>`<div>✓ ${x.label}: <span>${x.file.name}</span></div>`).join(''); }
+function renderFileList() { const el=document.querySelector('#fileList'); if(el) el.innerHTML = uploadedFiles.map(x=>`<div>✓ ${x.label}: <span>${x.file.name}</span></div>`).join(''); }
 
 function renderForm() {
   layout(`<main class="wizard"><div class="wizard-head"><div><p class="eyebrow">NOVA SOLICITAÇÃO</p><h1>Confira os dados</h1><p>O preenchimento foi reduzido ao que realmente precisamos para montar o instrumento.</p></div><div class="steps"><span>1 Documentos</span><b>2 Conferência</b><span>3 Geração</span></div></div>
@@ -50,7 +53,6 @@ function renderForm() {
   <div class="wizard-actions"><button class="secondary-btn" onclick="renderDocuments(requestType)">← Voltar aos documentos</button><button id="save" class="primary">Gerar documentos →</button><span id="status"></span></div></main>`);
   bindForm(); loadEstablishments();
 }
-
 function bindForm() {
   document.querySelector('#local').onchange=e=>document.querySelector('#outroWrap').classList.toggle('hidden',e.target.value!=='outro');
   document.querySelector('#vigencia').oninput=updateVigencia; document.querySelector('#horasDia').oninput=updateJornada; document.querySelector('#dias').oninput=updateJornada;
