@@ -7,7 +7,7 @@
 <script src="config.js"></script><script type="module">
 import { uploadDocumentos } from './api.js';
 const input=document.getElementById('files'),drop=document.getElementById('drop'),list=document.getElementById('filesList'),status=document.getElementById('status'),btn=document.getElementById('enviar');let selected=[];
-function render(){list.innerHTML=selected.map((f,i)=>`<div class="file"><span>${f.name}</span><button type="button" data-i="${i">Remover</button></div>`).join('');btn.disabled=!selected.length;list.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{selected.splice(Number(b.dataset.i),1);render()})}
+function render(){list.innerHTML=selected.map((f,i)=>`<div class="file"><span>${f.name}</span><button type="button" data-i="${i}">Remover</button></div>`).join('');btn.disabled=!selected.length;list.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{selected.splice(Number(b.dataset.i),1);render()})}
 function add(files){selected=[...selected,...files].filter((f,i,a)=>a.findIndex(x=>x.name===f.name&&x.size===f.size)===i);render()}
 input.onchange=e=>add([...e.target.files]);drop.onclick=()=>input.click();drop.ondragover=e=>{e.preventDefault();drop.classList.add('drag')};drop.ondragleave=()=>drop.classList.remove('drag');drop.ondrop=e=>{e.preventDefault();drop.classList.remove('drag');add([...e.dataTransfer.files])};
 function msg(cls,text){status.className='status '+cls;status.textContent=text;status.hidden=false}
