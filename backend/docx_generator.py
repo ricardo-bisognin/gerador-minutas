@@ -9,11 +9,21 @@ from docx import Document
 def _all_paragraphs(doc: Document):
     for paragraph in doc.paragraphs:
         yield paragraph
+    for section in doc.sections:
+        for paragraph in section.header.paragraphs:
+            yield paragraph
+        for paragraph in section.footer.paragraphs:
+            yield paragraph
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
                 for paragraph in cell.paragraphs:
                     yield paragraph
+                for table2 in cell.tables:
+                    for row2 in table2.rows:
+                        for cell2 in row2.cells:
+                            for paragraph in cell2.paragraphs:
+                                yield paragraph
 
 
 def _replace_paragraph_text(paragraph, replacements: dict[str, str]) -> None:
@@ -55,35 +65,42 @@ def _activities_text(activities: list[str]) -> str:
     return _list_text(activities, "[INFORMAR ATIVIDADES]")
 
 
+def _format_pending(value: Any, label: str) -> str:
+    return str(value) if value else f"[PREENCHER {label}]"
+
+
 def build_replacements(data: dict[str, Any]) -> dict[str, str]:
     quantidade = int(data.get("quantidade_pessoas", 0))
     vigencia = float(data.get("vigencia_anos", 5))
     inicio = int(data.get("periodo_inicio_ano", data.get("ano_assinatura", 2026)))
     fim = int(data.get("periodo_fim_ano", inicio + int(vigencia)))
     vigencia_texto = "5 (cinco) anos" if vigencia == 5 else f"{vigencia:g} anos"
+    fpe = _format_pending(data.get("fpe_formatado"), "FPE")
+    processo = _format_pending(data.get("processo_formatado"), "PROCESSO")
     return {
-        "{{fpe_formatado}}": str(data.get("fpe_formatado") or "[PREENCHER FPE]"),
-        "{{processo_formatado}}": str(data.get("processo_formatado") or "[PREENCHER PROCESSO]"),
-        "{{convenente_nome_razao_social}}": str(data.get("convenente_nome_razao_social", "[INFORMAR CONVENENTE]")),
-        "{{convenente_endereco_completo}}": str(data.get("convenente_endereco_completo", "[INFORMAR ENDEREÇO]")),
-        "{{convenente_endereco}}": str(data.get("convenente_endereco", data.get("convenente_endereco_completo", "[INFORMAR ENDEREÇO]"))),
-        "{{convenente_cnpj}}": str(data.get("convenente_cnpj", "[INFORMAR CNPJ]")),
-        "{{representante_nome}}": str(data.get("representante_nome", "[INFORMAR REPRESENTANTE]")),
-        "{{representante_rg}}": str(data.get("representante_rg", "[INFORMAR RG]")),
-        "{{representante_cpf}}": str(data.get("representante_cpf", "[INFORMAR CPF]")),
-        "{{representante_cargo}}": str(data.get("representante_cargo", "[INFORMAR CARGO]")),
-        "{{jornada_horario}}": str(data.get("jornada_horario", "[INFORMAR HORÁRIO]")),
-        "{{jornada_intervalo}}": str(data.get("jornada_intervalo", "[INFORMAR INTERVALO]")),
-        "{{jornada_dias}}": str(data.get("jornada_dias", "[INFORMAR DIAS]")),
+        "{{fpe_formatado}}": fpe,
+        "{{fpe_rodape}}": fpe,
+        "{{processo_formatado}}": processo,
+        "{{convenente_nome_razao_social}}": str(data.get("convenente_nome_razao_social", "[PREENCHER CONVENENTE]")),
+        "{{convenente_endereco_completo}}": str(data.get("convenente_endereco_completo", "[PREENCHER ENDEREÇO]")),
+        "{{convenente_endereco}}": str(data.get("convenente_endereco", data.get("convenente_endereco_completo", "[PREENCHER ENDEREÇO]"))),
+        "{{convenente_cnpj}}": str(data.get("convenente_cnpj", "[PREENCHER CNPJ]")),
+        "{{representante_nome}}": str(data.get("representante_nome", "[PREENCHER REPRESENTANTE]")),
+        "{{representante_rg}}": str(data.get("representante_rg", "[PREENCHER RG]")),
+        "{{representante_cpf}}": str(data.get("representante_cpf", "[PREENCHER CPF]")),
+        "{{representante_cargo}}": str(data.get("representante_cargo", "[PREENCHER CARGO]")),
+        "{{jornada_horario}}": str(data.get("jornada_horario", "[PREENCHER HORÁRIO]")),
+        "{{jornada_intervalo}}": str(data.get("jornada_intervalo", "[PREENCHER INTERVALO]")),
+        "{{jornada_dias}}": str(data.get("jornada_dias", "[PREENCHER DIAS]")),
         "{{atividades_formatadas}}": _activities_text(data.get("atividades", [])),
-        "{{local_prestacao}}": str(data.get("local_prestacao", "[INFORMAR LOCAL DE PRESTAÇÃO]")),
-        "{{quantidade_pessoas_formatada}}": f"{quantidade} ({_format_number(quantidade)})" if quantidade else "[INFORMAR QUANTIDADE]",
-        "{{quantidade_pessoas}}": str(quantidade) if quantidade else "[INFORMAR QUANTIDADE]",
-        "{{regimes_formatados}}": str(data.get("regimes_formatados", "[INFORMAR REGIMES]")),
+        "{{local_prestacao}}": str(data.get("local_prestacao", "[PREENCHER LOCAL DE PRESTAÇÃO]")),
+        "{{quantidade_pessoas_formatada}}": f"{quantidade} ({_format_number(quantidade)})" if quantidade else "[PREENCHER QUANTIDADE]",
+        "{{quantidade_pessoas}}": str(quantidade) if quantidade else "[PREENCHER QUANTIDADE]",
+        "{{regimes_formatados}}": str(data.get("regimes_formatados", "[PREENCHER REGIMES]")),
         "{{estabelecimento_nome}}": _establishments_text(data.get("estabelecimentos", [])),
         "{{estabelecimentos_formatados}}": _establishments_text(data.get("estabelecimentos", [])),
-        "{{remuneracao_texto}}": str(data.get("remuneracao_texto", "[INFORMAR REMUNERAÇÃO]")),
-        "{{remuneracao_plano_aplicacao}}": str(data.get("remuneracao_texto", "[INFORMAR REMUNERAÇÃO]")),
+        "{{remuneracao_texto}}": str(data.get("remuneracao_texto", "[PREENCHER REMUNERAÇÃO]")),
+        "{{remuneracao_plano_aplicacao}}": str(data.get("remuneracao_texto", "[PREENCHER REMUNERAÇÃO]")),
         "{{vigencia_formatada}}": vigencia_texto,
         "{{ano_assinatura}}": str(data.get("ano_assinatura", inicio)),
         "{{periodo_inicio_ano}}": str(inicio),
